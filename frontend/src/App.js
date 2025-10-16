@@ -1,35 +1,44 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React from "react";
 import AddUser from "./AddUser";
 import UserList from "./UserList";
-
-const API = process.env.REACT_APP_API_URL;
+import "./App.css";
 
 function App() {
-  const [users, setUsers] = useState([]);
-
-  // Lấy danh sách user từ MongoDB (qua backend)
-  useEffect(() => {
-    axios
-      .get(`${API}/users`)
-      .then((res) => setUsers(res.data))
-      .catch((err) => console.error("Lỗi tải dữ liệu:", err));
-  }, []);
-
-  const handleAdd = async (user) => {
-    try {
-      const res = await axios.post(`${API}/users`, user);
-      setUsers([...users, res.data]);
-    } catch (err) {
-      console.error("Lỗi thêm user:", err);
-    }
-  };
-
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Frontend hiển thị dữ liệu thật từ MongoDB</h2>
-      <AddUser onAdd={handleAdd} />
-      <UserList users={users} />
+    <div style={{ 
+      maxWidth: "1200px", 
+      margin: "0 auto", 
+      padding: "20px",
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+    }}>
+      <h1 style={{ 
+        textAlign: "center", 
+        color: "#2196F3",
+        marginBottom: "30px",
+        borderBottom: "3px solid #2196F3",
+        paddingBottom: "10px"
+      }}>
+        🎯 Quản lý User - React + MongoDB
+      </h1>
+      
+      <AddUser />
+      
+      <hr style={{ 
+        margin: "30px 0", 
+        border: "none", 
+        borderTop: "2px dashed #ddd" 
+      }} />
+      
+      <UserList />
+      
+      <footer style={{ 
+        marginTop: "40px", 
+        textAlign: "center", 
+        color: "#999",
+        fontSize: "12px"
+      }}>
+        Made with ❤️ by Group 8 | © 2025
+      </footer>
     </div>
   );
 }
