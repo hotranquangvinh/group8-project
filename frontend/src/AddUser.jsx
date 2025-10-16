@@ -10,7 +10,7 @@ function AddUser() {
     const newUser = { name, email };
 
     axios
-      .post("http://localhost:3000/users", newUser)
+      .post("http://localhost:3000/api/users", newUser)
       .then(() => {
         alert("Đã thêm user thành công!");
         setName("");
