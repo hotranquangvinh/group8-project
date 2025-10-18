@@ -1,32 +1,49 @@
-let users = []; // mảng tạm
+// controllers/userController.js
+const User = require('../models/User');
 
-// POST: tạo user mới
-exports.createUser = (req, res) => {
-  const user = req.body;
-  users.push(user);
-  res.status(201).json(user);
-};
-
-// GET: lấy danh sách user
-exports.getUsers = (req, res) => {
-  res.json(users);
-};
-
-// PUT: sửa user
-exports.updateUser = (req, res) => {
-  const { id } = req.params;
-  const index = users.findIndex(u => u.id == id);
-  if (index !== -1) {
-    users[index] = { ...users[index], ...req.body };
-    res.json(users[index]);
-  } else {
-    res.status(404).json({ message: "User not found" });
+// GET /api/users
+exports.getUsers = async (req, res) => {
+  try {
+    const users = await User.find(); // lấy toàn bộ user từ MongoDB
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
-// DELETE: xóa user
-exports.deleteUser = (req, res) => {
-  const { id } = req.params;
-  users = users.filter(u => u.id != id);
-  res.json({ message: "User deleted" });
+// POST /api/users
+exports.createUser = async (req, res) => {
+  try {
+    const newUser = new User(req.body);
+    const savedUser = await newUser.save();
+    res.status(201).json(savedUser);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// PUT /api/users/:id
+exports.updateUser = async (req, res) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true
+    });
+    if (!updatedUser)
+      return res.status(404).json({ message: 'User not found' });
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// DELETE /api/users/:id
+exports.deleteUser = async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    if (!deletedUser)
+      return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
