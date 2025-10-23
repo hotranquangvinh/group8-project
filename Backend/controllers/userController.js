@@ -1,5 +1,4 @@
-database
-const User = require("../models/User");
+
 
 // Tạo user mới
 exports.createUser = async (req, res) => {
@@ -109,4 +108,4 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-main
+
