@@ -26,7 +26,7 @@ exports.signup = async (req, res) => {
 
 // Đăng nhập (Login)
 exports.login = async (req, res) => {
-  try {
+  try { 
     const { email, password } = req.body;
 
     // Tìm user theo email
