@@ -6,22 +6,49 @@ const API_URL = 'http://localhost:3000/api/users';
 export default function UserList() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', email: '' });
   const [editErrors, setEditErrors] = useState({});
 
   useEffect(() => {
+    initAuth();
     fetchUsers();
   }, []);
+
+  const getToken = () => localStorage.getItem('auth_token');
+
+  const parseJwt = (token) => {
+    try {
+      const payload = token.split('.')[1];
+      const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(decodeURIComponent(escape(decoded)));
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const initAuth = () => {
+    const token = getToken();
+    if (!token) return;
+    const payload = parseJwt(token);
+    if (payload) {
+      setCurrentUser({ id: payload.id, role: payload.role ? String(payload.role).toLowerCase() : 'user' });
+    }
+    // set axios default auth header for convenience
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(API_URL);
+      const token = getToken();
+      const res = await axios.get(API_URL, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
       setUsers(res.data);
     } catch (err) {
       console.error('Error:', err);
-      alert('Lỗi tải dữ liệu!');
+      const msg = err.response?.data?.message || 'Lỗi tải dữ liệu!';
+      alert(msg);
     } finally {
       setLoading(false);
     }
@@ -48,6 +75,9 @@ export default function UserList() {
   };
 
   const handleEdit = (user) => {
+    // only allow edit if admin or self
+    if (!currentUser) return alert('Bạn cần đăng nhập');
+    if (currentUser.role !== 'admin' && currentUser.id !== user._id) return alert('Không có quyền sửa');
     setEditingUser(user._id);
     setEditForm({ name: user.name, email: user.email });
     setEditErrors({});
@@ -68,12 +98,13 @@ export default function UserList() {
         name: editForm.name.trim(),
         email: editForm.email.trim().toLowerCase()
       };
-      const res = await axios.put(`${API_URL}/${id}`, userData);
+      const token = getToken();
+      const res = await axios.put(`${API_URL}/${id}`, userData, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
       setUsers(users.map(u => u._id === id ? res.data : u));
       alert('✅ Cập nhật thành công!');
       handleCancelEdit();
     } catch (err) {
-      alert('❌ Lỗi cập nhật: ' + (err.response?.data?.error || err.message));
+      alert('❌ Lỗi cập nhật: ' + (err.response?.data?.message || err.response?.data?.error || err.message));
     } finally {
       setLoading(false);
     }
@@ -81,14 +112,18 @@ export default function UserList() {
 
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Xóa user "${name}"?`)) return;
+    // only admin or self can delete
+    if (!currentUser) return alert('Bạn cần đăng nhập');
+    if (currentUser.role !== 'admin' && currentUser.id !== id) return alert('Không có quyền xóa');
     
     setLoading(true);
     try {
-      await axios.delete(`${API_URL}/${id}`);
+      const token = getToken();
+      await axios.delete(`${API_URL}/${id}`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
       setUsers(users.filter(u => u._id !== id));
       alert('✅ Xóa thành công!');
     } catch (err) {
-      alert('❌ Lỗi xóa: ' + (err.response?.data?.error || err.message));
+      alert('❌ Lỗi xóa: ' + (err.response?.data?.message || err.response?.data?.error || err.message));
     } finally {
       setLoading(false);
     }
@@ -105,6 +140,7 @@ export default function UserList() {
           <thead>
             <tr style={{ backgroundColor: '#2196F3', color: 'white' }}>
               <th style={{ padding: '10px', textAlign: 'left' }}>Tên</th>
+              <th style={{ padding: '10px', textAlign: 'left' }}>Vai trò</th>
               <th style={{ padding: '10px', textAlign: 'left' }}>Email</th>
               <th style={{ padding: '10px', textAlign: 'center', width: '200px' }}>Hành động</th>
             </tr>
@@ -152,10 +188,21 @@ export default function UserList() {
                 ) : (
                   <>
                     <td style={{ padding: '10px' }}>{user.name}</td>
+                    <td style={{ padding: '10px' }}>
+                      <span style={{ padding: '4px 8px', borderRadius: 6, color: '#fff', fontSize: 12, fontWeight: '600', background: String(user.role).toLowerCase() === 'admin' ? '#ff9800' : '#4caf50' }}>
+                        {String(user.role).toLowerCase() === 'admin' ? 'Admin' : 'User'}
+                      </span>
+                    </td>
                     <td style={{ padding: '10px' }}>{user.email}</td>
                     <td style={{ padding: '10px', textAlign: 'center' }}>
-                      <button onClick={() => handleEdit(user)} disabled={loading || editingUser} style={{ marginRight: '5px', padding: '5px 10px', backgroundColor: '#2196F3', color: 'white', border: 'none', cursor: 'pointer' }}>✏️ Sửa</button>
-                      <button onClick={() => handleDelete(user._id, user.name)} disabled={loading || editingUser} style={{ padding: '5px 10px', backgroundColor: '#f44336', color: 'white', border: 'none', cursor: 'pointer' }}>🗑️ Xóa</button>
+                      {(currentUser && (currentUser.role === 'admin' || currentUser.id === user._id)) ? (
+                        <>
+                          <button onClick={() => handleEdit(user)} disabled={loading || editingUser} style={{ marginRight: '5px', padding: '5px 10px', backgroundColor: '#2196F3', color: 'white', border: 'none', cursor: 'pointer' }}>✏️ Sửa</button>
+                          <button onClick={() => handleDelete(user._id, user.name)} disabled={loading || editingUser} style={{ padding: '5px 10px', backgroundColor: '#f44336', color: 'white', border: 'none', cursor: 'pointer' }}>🗑️ Xóa</button>
+                        </>
+                      ) : (
+                        <span style={{ color: '#999' }}>Không có quyền</span>
+                      )}
                     </td>
                   </>
                 )}

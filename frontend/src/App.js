@@ -3,10 +3,11 @@ import AddUser from "./AddUser";
 import UserList from "./UserList";
 import SignUp from "./SignUp";
 import Login from "./Login";
+import Profile from "./Profile";
 import "./App.css";
 
 function App() {
-  const [view, setView] = useState("login"); // 'login' or 'signup'
+  const [view, setView] = useState("login"); // 'login', 'signup', or 'profile'
   const [token, setToken] = useState(null);
 
   useEffect(() => {
@@ -44,6 +45,9 @@ function App() {
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
         <button onClick={() => setView('login')} style={{ padding: '8px 14px', background: view === 'login' ? '#2196F3' : '#eee', color: view === 'login' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Đăng nhập</button>
         <button onClick={() => setView('signup')} style={{ padding: '8px 14px', background: view === 'signup' ? '#2196F3' : '#eee', color: view === 'signup' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Đăng ký</button>
+        {token && (
+          <button onClick={() => setView('profile')} style={{ padding: '8px 14px', background: view === 'profile' ? '#2196F3' : '#eee', color: view === 'profile' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>👤 Profile</button>
+        )}
         {token ? (
           <div style={{ marginLeft: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
             <span style={{ fontSize: 12, color: '#2e7d32' }}>● Đã đăng nhập</span>
@@ -55,6 +59,8 @@ function App() {
       <div style={{ maxWidth: 820, margin: '0 auto 30px' }}>
         {view === 'signup' ? (
           <SignUp onSuccess={() => setView('login')} />
+        ) : view === 'profile' ? (
+          <Profile token={token} />
         ) : (
           <Login onLogin={handleLogin} />
         )}

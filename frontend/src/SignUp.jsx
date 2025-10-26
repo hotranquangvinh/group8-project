@@ -52,7 +52,17 @@ export default function SignUp({ onSuccess }) {
     <div style={{ padding: 20, background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
       <h3>📝 Đăng ký</h3>
       {message && (
-        <div style={{ marginBottom: 10, color: message.type === 'error' ? '#c62828' : '#2e7d32' }}>{message.text}</div>
+        <div style={{ 
+          marginBottom: 10, 
+          padding: '10px 12px',
+          borderRadius: 6,
+          background: message.type === 'error' ? '#ffebee' : '#e8f5e9',
+          color: message.type === 'error' ? '#c62828' : '#2e7d32',
+          border: `1px solid ${message.type === 'error' ? '#ef5350' : '#66bb6a'}`,
+          fontWeight: '500'
+        }}>
+          {message.type === 'success' ? '✅ ' : '❌ '}{message.text}
+        </div>
       )}
 
       <form onSubmit={handleSubmit}>
