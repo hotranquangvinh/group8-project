@@ -1,14 +1,10 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' },
-    avatar: { type: String, default: '' },
-  },
-  { timestamps: true }
-);
+// Định nghĩa schema cho User
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },   // tên bắt buộc
+  email: { type: String, required: true, unique: true } // email duy nhất
+});
 
-module.exports = mongoose.model('User', userSchema);
+// Xuất model để dùng trong routes/controller
+module.exports = mongoose.model("User", userSchema);
