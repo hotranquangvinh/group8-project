@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/users";
+const API_URL = "http://localhost:3000/api/auth/signup";
 
 function AddUser() {
   const [name, setName] = useState("");
@@ -49,7 +49,8 @@ function AddUser() {
     };
 
     try {
-      await axios.post(API_URL, userData);
+  // signup is public endpoint; no auth header needed
+  await axios.post(API_URL, userData);
       alert("✅ Đã thêm user thành công!");
       
       // Reset form

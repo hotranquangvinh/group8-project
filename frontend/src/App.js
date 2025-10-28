@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from "react";
+import axios from 'axios';
 import AddUser from "./AddUser";
 import UserList from "./UserList";
 import SignUp from "./SignUp";
 import Login from "./Login";
 import Profile from "./Profile";
+import ForgotPassword from "./ForgotPassword";
+import ResetPassword from "./ResetPassword";
+import UploadAvatar from "./UploadAvatar";
 import "./App.css";
 
 function App() {
@@ -14,6 +18,16 @@ function App() {
     const t = localStorage.getItem("auth_token");
     if (t) setToken(t);
   }, []);
+
+  // Đặt Authorization header cho tất cả request axios khi token thay đổi
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      // xóa header khi logout
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  }, [token]);
 
   const handleLogin = (newToken) => {
     localStorage.setItem("auth_token", newToken);
@@ -57,7 +71,13 @@ function App() {
       </div>
 
       <div style={{ maxWidth: 820, margin: '0 auto 30px' }}>
-        {view === 'signup' ? (
+        {window.location.pathname.startsWith('/reset-password/') ? (
+          <ResetPassword />
+        ) : view === 'forgot' ? (
+          <ForgotPassword />
+        ) : view === 'upload' ? (
+          <UploadAvatar token={token} />
+        ) : view === 'signup' ? (
           <SignUp onSuccess={() => setView('login')} />
         ) : view === 'profile' ? (
           <Profile token={token} />
@@ -66,7 +86,11 @@ function App() {
         )}
       </div>
       
-  <AddUser />
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 12 }}>
+        <AddUser />
+        <button onClick={() => setView('forgot')} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: view === 'forgot' ? '#2196F3' : '#eee', color: view === 'forgot' ? '#fff' : '#333' }}>Quên mật khẩu</button>
+        <button onClick={() => setView('upload')} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: view === 'upload' ? '#2196F3' : '#eee', color: view === 'upload' ? '#fff' : '#333' }}>Upload Avatar</button>
+      </div>
       
       <hr style={{ 
         margin: "30px 0", 
@@ -74,7 +98,7 @@ function App() {
         borderTop: "2px dashed #ddd" 
       }} />
       
-      <UserList />
+  <UserList token={token} />
       
       <footer style={{ 
         marginTop: "40px", 
