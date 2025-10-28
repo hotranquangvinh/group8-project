@@ -18,7 +18,8 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 phút
     await user.save();
 
-    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+    // Link trỏ đến frontend (port 3001) để hiển thị form đổi mật khẩu
+    const resetUrl = `http://localhost:3001/reset-password/${resetToken}`;
 
     // Gửi email
     const transporter = nodemailer.createTransport({
