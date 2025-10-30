@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from 'axios';
+import axiosInstance from './axiosConfig'; // Import axios instance với interceptor
 import AddUser from "./AddUser";
 import UserList from "./UserList";
 import SignUp from "./SignUp";
@@ -8,6 +8,7 @@ import Profile from "./Profile";
 import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import UploadAvatar from "./UploadAvatar";
+import TokenRefreshDemo from "./TokenRefreshDemo";
 import "./App.css";
 
 function App() {
@@ -19,15 +20,8 @@ function App() {
     if (t) setToken(t);
   }, []);
 
-  // Đặt Authorization header cho tất cả request axios khi token thay đổi
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      // xóa header khi logout
-      delete axios.defaults.headers.common['Authorization'];
-    }
-  }, [token]);
+  // Axios interceptor đã tự động xử lý Authorization header
+  // Không cần set axios.defaults.headers nữa
 
   const handleLogin = (newToken) => {
     localStorage.setItem("auth_token", newToken);
@@ -35,9 +29,12 @@ function App() {
   };
 
   const handleLogout = () => {
+    // Xóa cả access token và refresh token
     localStorage.removeItem("auth_token");
+    localStorage.removeItem("refresh_token");
     setToken(null);
-    alert("✅ Đã đăng xuất (token đã được xóa phía client)");
+    setView('login'); // Chuyển về trang login
+    alert("✅ Đã đăng xuất (tokens đã được xóa)");
   };
   return (
     <div style={{ 
@@ -60,7 +57,10 @@ function App() {
         <button onClick={() => setView('login')} style={{ padding: '8px 14px', background: view === 'login' ? '#2196F3' : '#eee', color: view === 'login' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Đăng nhập</button>
         <button onClick={() => setView('signup')} style={{ padding: '8px 14px', background: view === 'signup' ? '#2196F3' : '#eee', color: view === 'signup' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Đăng ký</button>
         {token && (
-          <button onClick={() => setView('profile')} style={{ padding: '8px 14px', background: view === 'profile' ? '#2196F3' : '#eee', color: view === 'profile' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>👤 Profile</button>
+          <>
+            <button onClick={() => setView('profile')} style={{ padding: '8px 14px', background: view === 'profile' ? '#2196F3' : '#eee', color: view === 'profile' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>👤 Profile</button>
+            <button onClick={() => setView('demo')} style={{ padding: '8px 14px', background: view === 'demo' ? '#2196F3' : '#eee', color: view === 'demo' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>🔄 Demo Refresh</button>
+          </>
         )}
         {token ? (
           <div style={{ marginLeft: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -81,6 +81,8 @@ function App() {
           <SignUp onSuccess={() => setView('login')} />
         ) : view === 'profile' ? (
           <Profile token={token} />
+        ) : view === 'demo' ? (
+          <TokenRefreshDemo />
         ) : (
           <Login onLogin={handleLogin} />
         )}
