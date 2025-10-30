@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from "react";
+<<<<<<< HEAD
 import axios from 'axios';
+=======
+>>>>>>> main
 import AddUser from "./AddUser";
 import UserList from "./UserList";
 import SignUp from "./SignUp";
 import Login from "./Login";
 import Profile from "./Profile";
+<<<<<<< HEAD
 import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import UploadAvatar from "./UploadAvatar";
+=======
+>>>>>>> main
 import "./App.css";
 
 function App() {
@@ -19,6 +25,7 @@ function App() {
     if (t) setToken(t);
   }, []);
 
+<<<<<<< HEAD
   // Đặt Authorization header cho tất cả request axios khi token thay đổi
   useEffect(() => {
     if (token) {
@@ -29,6 +36,8 @@ function App() {
     }
   }, [token]);
 
+=======
+>>>>>>> main
   const handleLogin = (newToken) => {
     localStorage.setItem("auth_token", newToken);
     setToken(newToken);
@@ -71,6 +80,7 @@ function App() {
       </div>
 
       <div style={{ maxWidth: 820, margin: '0 auto 30px' }}>
+<<<<<<< HEAD
         {window.location.pathname.startsWith('/reset-password/') ? (
           <ResetPassword />
         ) : view === 'forgot' ? (
@@ -78,6 +88,9 @@ function App() {
         ) : view === 'upload' ? (
           <UploadAvatar token={token} />
         ) : view === 'signup' ? (
+=======
+        {view === 'signup' ? (
+>>>>>>> main
           <SignUp onSuccess={() => setView('login')} />
         ) : view === 'profile' ? (
           <Profile token={token} />
@@ -86,11 +99,15 @@ function App() {
         )}
       </div>
       
+<<<<<<< HEAD
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 12 }}>
         <AddUser />
         <button onClick={() => setView('forgot')} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: view === 'forgot' ? '#2196F3' : '#eee', color: view === 'forgot' ? '#fff' : '#333' }}>Quên mật khẩu</button>
         <button onClick={() => setView('upload')} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: view === 'upload' ? '#2196F3' : '#eee', color: view === 'upload' ? '#fff' : '#333' }}>Upload Avatar</button>
       </div>
+=======
+  <AddUser />
+>>>>>>> main
       
       <hr style={{ 
         margin: "30px 0", 
