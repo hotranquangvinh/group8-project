@@ -20,10 +20,8 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/user')); // chứa route Admin + User
 app.use('/api/profile', require('./routes/profileRoutes'));
-<<<<<<< HEAD
-=======
+
 app.use('/api/advanced', require('./routes/advancedRoutes')); // <-- thêm route Advanced
->>>>>>> backend-forgot-password
 
 // 🧩 Trang kiểm tra nhanh server (tuỳ chọn)
 app.get('/', (req, res) => {

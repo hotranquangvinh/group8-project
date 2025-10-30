@@ -1,17 +1,34 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const RefreshToken = require('../models/RefreshToken');
 
-// Đăng ký (Sign Up)
-// Note: password hashing is handled by User model pre-save hook
+// Tạo Access Token
+const generateAccessToken = (user) => {
+  return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRE || '15m',
+  });
+};
+
+// Tạo Refresh Token
+const generateRefreshToken = async (user) => {
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRE || '7d',
+  });
+
+  // Lưu vào DB
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await RefreshToken.create({ user: user._id, token, expiresAt });
+
+  return token;
+};
+
+// Đăng ký
 exports.signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
-    // Kiểm tra email trùng
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: 'Email đã tồn tại' });
 
-    // Tạo user mới (password will be hashed by model)
     const newUser = new User({ name, email, password });
     await newUser.save();
 
@@ -21,60 +38,77 @@ exports.signup = async (req, res) => {
   }
 };
 
-// Đăng nhập (Login)
+// Đăng nhập
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Tìm user theo email
     const user = await User.findOne({ email });
-    console.log('[authController.login] attempt:', { email });
-    if (user) console.log('[authController.login] found user, stored password hash:', user.password);
     if (!user) return res.status(400).json({ message: 'Email không tồn tại' });
 
-    // So sánh mật khẩu bằng phương thức model (sử dụng bcrypt)
     const isMatch = await user.comparePassword(password);
-    console.log('[authController.login] password compare result:', isMatch);
     if (!isMatch) return res.status(400).json({ message: 'Sai mật khẩu' });
 
-    // Tạo token
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-      expiresIn: '1d',
-    });
+    // 🔥 Sinh token
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await generateRefreshToken(user);
 
-    res.json({ message: 'Đăng nhập thành công', token });
+    res.json({
+      message: 'Đăng nhập thành công',
+      accessToken,
+      refreshToken,
+    });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
 };
 
-// Đăng xuất (Logout)
+// Refresh Token
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(400).json({ message: 'Thiếu refresh token' });
+
+    const stored = await RefreshToken.findOne({ token: refreshToken });
+    if (!stored) return res.status(403).json({ message: 'Refresh token không hợp lệ hoặc đã bị thu hồi' });
+
+    jwt.verify(refreshToken, process.env.JWT_SECRET, async (err, decoded) => {
+      if (err) return res.status(403).json({ message: 'Refresh token hết hạn hoặc không hợp lệ' });
+
+      const user = await User.findById(decoded.id);
+      if (!user) return res.status(404).json({ message: 'Không tìm thấy user' });
+
+      const newAccessToken = generateAccessToken(user);
+      res.json({ accessToken: newAccessToken });
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server', error: error.message });
+  }
+};
+
+// Logout (xóa Refresh Token)
 exports.logout = async (req, res) => {
   try {
-    // Ở backend không lưu token nên chỉ cần báo client xóa token là xong
-    res.json({ message: 'Đăng xuất thành công (xóa token phía client)' });
+    const { refreshToken } = req.body;
+    if (refreshToken) await RefreshToken.deleteOne({ token: refreshToken });
+
+    res.json({ message: 'Đăng xuất thành công, token đã bị thu hồi' });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
 };
 
-// DEBUG: reset a user's password (development only)
+// DEBUG: reset password
 exports.debugResetPassword = async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(403).json({ message: 'Not allowed in production' });
-  }
   try {
     const { email, newPassword } = req.body;
-    if (!email || !newPassword) return res.status(400).json({ message: 'Missing email or newPassword' });
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: 'User không tồn tại' });
 
-    // Assign new raw password - model pre-save hook will hash it
     user.password = newPassword;
     await user.save();
 
-    return res.json({ message: 'Password reset for debugging', email: user.email });
+    res.json({ message: 'Đã reset mật khẩu (debug)', email });
   } catch (error) {
-    return res.status(500).json({ message: 'Lỗi server', error: error.message });
+    res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
 };
