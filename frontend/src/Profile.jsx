@@ -152,22 +152,54 @@ export default function Profile({ token }) {
       {!isEditing && profile ? (
         // View Mode
         <div>
-          <div style={{ marginBottom: 20 }}>
-            {profile.avatar && (
-              <div style={{ marginBottom: 15, textAlign: 'center' }}>
+          {/* Avatar hiển thị lớn và đẹp */}
+          <div style={{ marginBottom: 25, textAlign: 'center' }}>
+            {profile.avatar ? (
+              <div style={{ 
+                width: '150px', 
+                height: '150px', 
+                margin: '0 auto 15px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                border: '4px solid #2196F3',
+                boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
+                background: '#f5f5f5'
+              }}>
                 <img 
                   src={profile.avatar} 
                   alt="Avatar" 
                   style={{ 
-                    width: 120, 
-                    height: 120, 
-                    borderRadius: '50%', 
-                    objectFit: 'cover',
-                    border: '3px solid #2196F3'
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover'
                   }} 
                 />
               </div>
+            ) : (
+              <div style={{ 
+                width: '150px', 
+                height: '150px', 
+                margin: '0 auto 15px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '64px',
+                color: 'white',
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+              }}>
+                👤
+              </div>
             )}
+            {!profile.avatar && (
+              <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
+                Bạn chưa có avatar. Click "Upload Avatar" để thêm!
+              </div>
+            )}
+          </div>
+          
+          <div style={{ marginBottom: 20 }}>
             
             <div style={{ marginBottom: 12 }}>
               <strong style={{ display: 'block', marginBottom: 4, color: '#555' }}>Tên:</strong>
