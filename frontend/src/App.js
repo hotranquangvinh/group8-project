@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from './axiosConfig'; // Import axios instance với interceptor
+import { useUserRole } from './components/RoleBasedComponent';
 import AddUser from "./AddUser";
 import UserList from "./UserList";
 import SignUp from "./SignUp";
@@ -9,16 +10,45 @@ import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import UploadAvatar from "./UploadAvatar";
 import TokenRefreshDemo from "./TokenRefreshDemo";
+import AdminDashboard from "./AdminDashboard";
+import ModeratorPanel from "./ModeratorPanel";
 import "./App.css";
 
 function App() {
   const [view, setView] = useState("login"); // 'login', 'signup', or 'profile'
   const [token, setToken] = useState(null);
+  const userRole = useUserRole(token); // Lấy role từ token
 
   useEffect(() => {
     const t = localStorage.getItem("auth_token");
     if (t) setToken(t);
   }, []);
+
+  // Log role vào console mỗi khi token hoặc role thay đổi
+  useEffect(() => {
+    if (token && userRole) {
+      const parseJwt = (token) => {
+        try {
+          const payload = token.split('.')[1];
+          const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+          return JSON.parse(decodeURIComponent(escape(decoded)));
+        } catch (e) {
+          return null;
+        }
+      };
+      
+      const payload = parseJwt(token);
+      console.log('%c👤 USER INFO', 'background: #2196F3; color: white; padding: 5px 10px; border-radius: 3px; font-weight: bold;');
+      console.log('📧 Email:', payload?.email || 'N/A');
+      console.log('👤 Name:', payload?.name || 'N/A');
+      console.log('🎭 Role:', userRole.toUpperCase());
+      console.log('🆔 User ID:', payload?.id || 'N/A');
+      console.log('⏰ Token expires:', payload?.exp ? new Date(payload.exp * 1000).toLocaleString() : 'N/A');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } else if (!token) {
+      console.log('%c⚠️ NOT LOGGED IN', 'background: #f44336; color: white; padding: 5px 10px; border-radius: 3px; font-weight: bold;');
+    }
+  }, [token, userRole]);
 
   // Axios interceptor đã tự động xử lý Authorization header
   // Không cần set axios.defaults.headers nữa
@@ -53,18 +83,48 @@ function App() {
         🎯 Quản lý User - React + MongoDB
       </h1>
       
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
         <button onClick={() => setView('login')} style={{ padding: '8px 14px', background: view === 'login' ? '#2196F3' : '#eee', color: view === 'login' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Đăng nhập</button>
         <button onClick={() => setView('signup')} style={{ padding: '8px 14px', background: view === 'signup' ? '#2196F3' : '#eee', color: view === 'signup' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Đăng ký</button>
         {token && (
           <>
             <button onClick={() => setView('profile')} style={{ padding: '8px 14px', background: view === 'profile' ? '#2196F3' : '#eee', color: view === 'profile' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>👤 Profile</button>
+            
+            {/* Admin-only menu */}
+            {userRole === 'admin' && (
+              <button onClick={() => setView('admin-dashboard')} style={{ padding: '8px 14px', background: view === 'admin-dashboard' ? '#ff9800' : '#eee', color: view === 'admin-dashboard' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>👑 Dashboard</button>
+            )}
+            
+            {/* Moderator-only menu */}
+            {userRole === 'moderator' && (
+              <button onClick={() => setView('moderator-panel')} style={{ padding: '8px 14px', background: view === 'moderator-panel' ? '#2196f3' : '#eee', color: view === 'moderator-panel' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>🛡️ Moderator</button>
+            )}
+            
             <button onClick={() => setView('demo')} style={{ padding: '8px 14px', background: view === 'demo' ? '#2196F3' : '#eee', color: view === 'demo' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>🔄 Demo Refresh</button>
           </>
         )}
         {token ? (
           <div style={{ marginLeft: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: '#2e7d32' }}>● Đã đăng nhập</span>
+            {(() => {
+              const roleConfig = {
+                admin: { label: '👑 Admin', color: '#ff9800' },
+                moderator: { label: '🛡️ Moderator', color: '#2196f3' },
+                user: { label: '👤 User', color: '#4caf50' }
+              };
+              const config = roleConfig[userRole] || roleConfig.user;
+              return (
+                <span style={{ 
+                  padding: '4px 8px', 
+                  background: config.color, 
+                  color: '#fff', 
+                  borderRadius: 4, 
+                  fontSize: 12,
+                  fontWeight: '600'
+                }}>
+                  {config.label}
+                </span>
+              );
+            })()}
             <button onClick={handleLogout} style={{ padding: '6px 10px', background: '#f44336', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Đăng xuất</button>
           </div>
         ) : null}
@@ -83,6 +143,10 @@ function App() {
           <Profile token={token} />
         ) : view === 'demo' ? (
           <TokenRefreshDemo />
+        ) : view === 'admin-dashboard' ? (
+          <AdminDashboard />
+        ) : view === 'moderator-panel' ? (
+          <ModeratorPanel />
         ) : (
           <Login onLogin={handleLogin} />
         )}
