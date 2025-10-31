@@ -1,3 +1,4 @@
+// middleware/authMiddleware.js
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
@@ -28,7 +29,25 @@ const protect = async (req, res, next) => {
   }
 };
 
-// 🧩 Middleware: Kiểm tra quyền Admin
+// 🧩 Middleware: Kiểm tra vai trò (Role-Based Access Control)
+const checkRole = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Chưa xác thực người dùng" });
+    }
+
+    // Nếu role của user không nằm trong danh sách cho phép → từ chối
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        message: `Truy cập bị từ chối – yêu cầu quyền: ${allowedRoles.join(", ")}`,
+      });
+    }
+
+    next();
+  };
+};
+
+// 🧩 Middleware cũ (giữ lại cho tương thích)
 const isAdmin = (req, res, next) => {
   if (req.user && req.user.role === "Admin") {
     next();
@@ -37,4 +56,4 @@ const isAdmin = (req, res, next) => {
   }
 };
 
-module.exports = { protect, isAdmin };
+module.exports = { protect, isAdmin, checkRole };
