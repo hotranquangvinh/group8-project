@@ -132,9 +132,9 @@ function App() {
 
       <div style={{ maxWidth: 820, margin: '0 auto 30px' }}>
         {window.location.pathname.startsWith('/reset-password/') ? (
-          <ResetPassword />
+          <ResetPassword onBack={() => window.location.href = '/'} />
         ) : view === 'forgot' ? (
-          <ForgotPassword />
+          <ForgotPassword onBack={() => setView('login')} />
         ) : view === 'upload' ? (
           <UploadAvatar token={token} />
         ) : view === 'signup' ? (
