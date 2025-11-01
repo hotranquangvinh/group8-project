@@ -65,6 +65,12 @@ export default function Login({ onLogin }) {
           {loading ? '⏳ Đang đăng nhập...' : 'Đăng nhập'}
         </button>
       </form>
+
+      <div style={{ marginTop: 16, textAlign: 'center' }}>
+        <a href="#forgot-password" style={{ color: '#1976d2', textDecoration: 'none', fontSize: 14 }}>
+          🔑 Quên mật khẩu?
+        </a>
+      </div>
     </div>
   );
 }
