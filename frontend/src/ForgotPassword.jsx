@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from './axiosConfig';
 
-export default function ForgotPassword({ onBack }) {
+export default function ForgotPassword() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -140,7 +142,7 @@ export default function ForgotPassword({ onBack }) {
           <div style={{ textAlign: 'center' }}>
             <button
               type="button"
-              onClick={onBack || (() => window.location.href = '/')}
+              onClick={() => navigate('/login')}
               style={{
                 background: 'none',
                 border: 'none',
