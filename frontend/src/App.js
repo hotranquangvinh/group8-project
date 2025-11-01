@@ -12,6 +12,8 @@ import UploadAvatar from "./UploadAvatar";
 import TokenRefreshDemo from "./TokenRefreshDemo";
 import AdminDashboard from "./AdminDashboard";
 import ModeratorPanel from "./ModeratorPanel";
+import ActivityLogs from "./ActivityLogs";
+import RateLimitDemo from "./RateLimitDemo";
 import "./App.css";
 
 function App() {
@@ -91,7 +93,11 @@ function App() {
             
             {/* Admin-only menu */}
             {userRole === 'admin' && (
-              <button onClick={() => setView('admin-dashboard')} style={{ padding: '8px 14px', background: view === 'admin-dashboard' ? '#ff9800' : '#eee', color: view === 'admin-dashboard' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>👑 Dashboard</button>
+              <>
+                <button onClick={() => setView('admin-dashboard')} style={{ padding: '8px 14px', background: view === 'admin-dashboard' ? '#ff9800' : '#eee', color: view === 'admin-dashboard' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>👑 Dashboard</button>
+                <button onClick={() => setView('activity-logs')} style={{ padding: '8px 14px', background: view === 'activity-logs' ? '#ff9800' : '#eee', color: view === 'activity-logs' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>📜 Activity Logs</button>
+                <button onClick={() => setView('rate-limit-demo')} style={{ padding: '8px 14px', background: view === 'rate-limit-demo' ? '#ff9800' : '#eee', color: view === 'rate-limit-demo' ? '#fff' : '#333', border: 'none', borderRadius: 6, cursor: 'pointer' }}>🛡️ Rate Limit</button>
+              </>
             )}
             
             {/* Moderator-only menu */}
@@ -144,6 +150,10 @@ function App() {
           <TokenRefreshDemo />
         ) : view === 'admin-dashboard' ? (
           <AdminDashboard />
+        ) : view === 'activity-logs' ? (
+          <ActivityLogs />
+        ) : view === 'rate-limit-demo' ? (
+          <RateLimitDemo />
         ) : view === 'moderator-panel' ? (
           <ModeratorPanel />
         ) : (
