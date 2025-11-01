@@ -2,7 +2,8 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const User = require("../models/User");
 const RefreshToken = require("../models/RefreshToken");
-const sendEmail = require("../config/nodemailer"); // import hàm gửi email
+const sendEmail = require("../config/nodemailer");
+const logActivity = require("../middleware/logActivity");
 
 // =======================================
 // 🔐 HÀM HỖ TRỢ TOKEN
@@ -20,14 +21,12 @@ const generateRefreshToken = async (user) => {
 
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   await RefreshToken.create({ user: user._id, token, expiresAt });
-
   return token;
 };
 
 // =======================================
 // 🧩 AUTH BASIC: SIGNUP, LOGIN, REFRESH, LOGOUT
 // =======================================
-
 exports.signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -37,6 +36,9 @@ exports.signup = async (req, res) => {
 
     const newUser = new User({ name, email, password });
     await newUser.save();
+
+    // 🔍 Ghi log
+    await logActivity(newUser._id, "Đăng ký tài khoản", req.ip);
 
     res.status(201).json({ message: "Đăng ký thành công", user: newUser });
   } catch (error) {
@@ -51,10 +53,16 @@ exports.login = async (req, res) => {
     if (!user) return res.status(400).json({ message: "Email không tồn tại" });
 
     const isMatch = await user.comparePassword(password);
-    if (!isMatch) return res.status(400).json({ message: "Sai mật khẩu" });
+    if (!isMatch) {
+      await logActivity(null, `Đăng nhập thất bại (email: ${email})`, req.ip);
+      return res.status(400).json({ message: "Sai mật khẩu" });
+    }
 
     const accessToken = generateAccessToken(user);
     const refreshToken = await generateRefreshToken(user);
+
+    // 🔍 Ghi log
+    await logActivity(user._id, "Đăng nhập thành công", req.ip);
 
     res.json({
       message: "Đăng nhập thành công",
@@ -85,9 +93,13 @@ exports.refreshToken = async (req, res) => {
           .json({ message: "Refresh token hết hạn hoặc không hợp lệ" });
 
       const user = await User.findById(decoded.id);
-if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
+      if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
 
       const newAccessToken = generateAccessToken(user);
+
+      // 🔍 Ghi log
+      await logActivity(user._id, "Làm mới token truy cập", req.ip);
+
       res.json({ accessToken: newAccessToken });
     });
   } catch (error) {
@@ -99,6 +111,9 @@ exports.logout = async (req, res) => {
   try {
     const { refreshToken } = req.body;
     if (refreshToken) await RefreshToken.deleteOne({ token: refreshToken });
+
+    // 🔍 Ghi log
+    if (req.user?._id) await logActivity(req.user._id, "Đăng xuất", req.ip);
 
     res.json({ message: "Đăng xuất thành công, token đã bị thu hồi" });
   } catch (error) {
@@ -117,6 +132,8 @@ exports.debugResetPassword = async (req, res) => {
 
     user.password = newPassword;
     await user.save();
+
+    await logActivity(user._id, "Reset mật khẩu (debug)", req.ip);
 
     res.json({ message: "Đã reset mật khẩu (debug)", email });
   } catch (error) {
@@ -137,60 +154,19 @@ exports.forgotPassword = async (req, res) => {
     const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
-    // URL frontend để user click vào
     const resetURL = `http://localhost:3001/reset-password/${resetToken}`;
-
     const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .button { display: inline-block; padding: 12px 30px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🔑 Đặt lại mật khẩu</h1>
-          </div>
-          <div class="content">
-            <p>Xin chào <strong>${user.name || user.email}</strong>,</p>
-<p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản của mình.</p>
-            <p>Click vào nút dưới đây để đặt lại mật khẩu (link có hiệu lực trong <strong>10 phút</strong>):</p>
-            <p style="text-align: center;">
-              <a href="${resetURL}" class="button">🔄 Đặt lại mật khẩu</a>
-            </p>
-            <p>Hoặc copy link này vào trình duyệt:</p>
-            <p style="background: #fff; padding: 10px; border-left: 4px solid #667eea; word-break: break-all;">
-              ${resetURL}
-            </p>
-            <p style="color: #f44336; margin-top: 20px;">
-              ⚠️ Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.
-            </p>
-          </div>
-          <div class="footer">
-            <p>Email này được gửi tự động, vui lòng không trả lời.</p>
-            <p>&copy; 2025 Group8 - User Management System</p>
-          </div>
-        </div>
-      </body>
-      </html>
+      <h2>🔑 Đặt lại mật khẩu</h2>
+      <p>Xin chào <strong>${user.name || user.email}</strong>,</p>
+      <p>Nhấn vào link dưới đây để đặt lại mật khẩu (hiệu lực 10 phút):</p>
+      <a href="${resetURL}" target="_blank">Đặt lại mật khẩu</a>
+      <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
     `;
 
-    console.log('📧 Sending forgot password email to:', user.email);
-    console.log('🔗 Reset URL:', resetURL);
+    await sendEmail(user.email, "Reset Password - Group8 App", htmlContent);
 
-    // Gọi sendEmail với đúng tham số: (to, subject, htmlContent)
-    await sendEmail(
-      user.email,
-      'Reset Password - Group8 App',
-      htmlContent
-    );
+    // 🔍 Ghi log
+    await logActivity(user._id, "Yêu cầu đặt lại mật khẩu", req.ip);
 
     res.json({ message: "✅ Đã gửi email đặt lại mật khẩu!" });
   } catch (error) {
@@ -215,12 +191,17 @@ exports.resetPassword = async (req, res) => {
     });
 
     if (!user)
-      return res.status(400).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+      return res
+        .status(400)
+        .json({ message: "Token không hợp lệ hoặc đã hết hạn" });
 
     user.password = req.body.password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
+
+    // 🔍 Ghi log
+    await logActivity(user._id, "Đặt lại mật khẩu thành công", req.ip);
 
     res.json({ message: "✅ Mật khẩu đã được đặt lại thành công!" });
   } catch (error) {
