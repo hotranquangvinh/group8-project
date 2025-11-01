@@ -1,8 +1,14 @@
+<<<<<<< HEAD
 import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from './store/slices/authSlice';
 import ProtectedRoute from './components/ProtectedRoute';
+=======
+import React, { useState, useEffect } from "react";
+import axiosInstance from './axiosConfig'; // Sử dụng axios instance với interceptor
+import { useUserRole } from './components/RoleBasedComponent';
+>>>>>>> b6ef04c37443b6908ab2d0a12e5056534ace0647
 import AddUser from "./AddUser";
 import UserList from "./UserList";
 import SignUp from "./SignUp";
@@ -26,17 +32,55 @@ function Navigation() {
   const userRole = user?.role?.toLowerCase() || 'user';
 
   useEffect(() => {
+<<<<<<< HEAD
     if (isAuthenticated && user) {
       console.log('%c👤 USER INFO', 'background: #2196F3; color: white; padding: 5px 10px; border-radius: 3px; font-weight: bold;');
       console.log('📧 Email:', user.email || 'N/A');
       console.log('👤 Name:', user.name || 'N/A');
       console.log('🎭 Role:', userRole.toUpperCase());
       console.log('🆔 User ID:', user.id || 'N/A');
+=======
+    const t = localStorage.getItem("auth_token");
+    if (t) setToken(t);
+  }, []);
+
+  // Axios interceptor đã tự động xử lý Authorization header
+  // Không cần set axios.defaults.headers nữa
+
+  // Log role vào console mỗi khi token hoặc role thay đổi (hỗ trợ debug)
+  useEffect(() => {
+    if (token && userRole) {
+      const parseJwt = (t) => {
+        try {
+          const payload = t.split('.')[1];
+          const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+          return JSON.parse(decodeURIComponent(escape(decoded)));
+        } catch (e) {
+          return null;
+        }
+      };
+
+      const payload = parseJwt(token);
+      console.log('%c👤 USER INFO', 'background: #2196F3; color: white; padding: 5px 10px; border-radius: 3px; font-weight: bold;');
+      console.log('📧 Email:', payload?.email || 'N/A');
+      console.log('👤 Name:', payload?.name || 'N/A');
+      console.log('🎭 Role:', userRole ? userRole.toUpperCase() : 'N/A');
+      console.log('🆔 User ID:', payload?.id || 'N/A');
+      console.log('⏰ Token expires:', payload?.exp ? new Date(payload.exp * 1000).toLocaleString() : 'N/A');
+>>>>>>> b6ef04c37443b6908ab2d0a12e5056534ace0647
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     } else if (!isAuthenticated) {
       console.log('%c⚠️ NOT LOGGED IN', 'background: #f44336; color: white; padding: 5px 10px; border-radius: 3px; font-weight: bold;');
     }
+<<<<<<< HEAD
   }, [isAuthenticated, user, userRole]);
+=======
+  }, [token, userRole]);
+  const handleLogin = (newToken) => {
+    localStorage.setItem("auth_token", newToken);
+    setToken(newToken);
+  };
+>>>>>>> b6ef04c37443b6908ab2d0a12e5056534ace0647
 
   const handleLogout = () => {
     dispatch(logout());
