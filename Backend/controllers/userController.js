@@ -85,8 +85,61 @@ exports.deleteUser = async (req, res) => {
     }
 
     await User.findByIdAndDelete(req.params.id);
-    res.json({ message: 'User deleted successfully' });
+res.json({ message: 'User deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// 🔑 Đổi role của user (chỉ Admin)
+exports.changeUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    
+    if (!['Admin', 'Moderator', 'User'].includes(role)) {
+      return res.status(400).json({ message: 'Role không hợp lệ. Chỉ được: Admin, Moderator, User' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User không tồn tại' });
+
+    user.role = role;
+    await user.save();
+
+    res.json({ 
+      message: `Đã cập nhật role của ${user.name} thành ${role}`,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server: ' + error.message });
+  }
+};
+
+// 🔑 Reset password cho user (chỉ Admin)
+exports.resetUserPassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User không tồn tại' });
+
+    user.password = newPassword; // Model sẽ tự động hash
+    await user.save();
+
+    res.json({ 
+      message: `Đã reset mật khẩu cho ${user.email}`,
+      email: user.email
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server: ' + error.message });
   }
 };
