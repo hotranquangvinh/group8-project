@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
-import axiosInstance from './axiosConfig';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { signupUser, clearError } from './store/slices/authSlice';
 
-const API_URL = '/auth/signup'; // Sử dụng relative path
-
-export default function SignUp({ onSuccess }) {
+export default function SignUp() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { loading, error } = useSelector(state => state.auth);
+  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
   const emailRegex = /\S+@\S+\.\S+/;
+
+  // Handle Redux errors
+  useEffect(() => {
+    if (error) {
+      setMessage({ type: 'error', text: error });
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,22 +40,16 @@ export default function SignUp({ onSuccess }) {
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await axiosInstance.post(API_URL, {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password,
-      });
+    const result = await dispatch(signupUser({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password,
+    }));
 
-      setMessage({ type: 'success', text: res.data?.message || 'Đăng ký thành công' });
+    if (signupUser.fulfilled.match(result)) {
+      setMessage({ type: 'success', text: 'Đăng ký thành công! Chuyển sang đăng nhập...' });
       setName(''); setEmail(''); setPassword('');
-      if (onSuccess) onSuccess();
-    } catch (err) {
-      const errMsg = err.response?.data?.message || err.message;
-      setMessage({ type: 'error', text: `Lỗi: ${errMsg}` });
-    } finally {
-      setLoading(false);
+      setTimeout(() => navigate('/login'), 1500);
     }
   };
 

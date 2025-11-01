@@ -1,13 +1,31 @@
-import React, { useState } from 'react';
-import axiosInstance from './axiosConfig';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { loginUser, clearError } from './store/slices/authSlice';
 
-const API_URL = '/auth/login'; // Sử dụng relative path vì baseURL đã được set trong axiosConfig
-
-export default function Login({ onLogin }) {
+export default function Login() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { isAuthenticated, loading, error } = useSelector(state => state.auth);
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/profile');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Handle Redux errors
+  useEffect(() => {
+    if (error) {
+      setMessage({ type: 'error', text: error });
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,29 +36,14 @@ export default function Login({ onLogin }) {
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await axiosInstance.post(API_URL, { email: email.trim().toLowerCase(), password });
-      const token = res.data?.accessToken || res.data?.token; // Backend trả về accessToken
-      const refreshToken = res.data?.refreshToken;
-      
-      if (token) {
-        // Lưu cả access token và refresh token vào localStorage
-        localStorage.setItem('auth_token', token);
-        if (refreshToken) {
-          localStorage.setItem('refresh_token', refreshToken);
-        }
-        
-        if (onLogin) onLogin(token);
-        setMessage({ type: 'success', text: res.data?.message || 'Đăng nhập thành công' });
-      } else {
-        setMessage({ type: 'error', text: 'Không nhận được token từ server' });
-      }
-    } catch (err) {
-      const errMsg = err.response?.data?.message || err.message;
-      setMessage({ type: 'error', text: `Lỗi: ${errMsg}` });
-    } finally {
-      setLoading(false);
+    const result = await dispatch(loginUser({ 
+      email: email.trim().toLowerCase(), 
+      password 
+    }));
+
+    if (loginUser.fulfilled.match(result)) {
+      setMessage({ type: 'success', text: 'Đăng nhập thành công!' });
+      setTimeout(() => navigate('/profile'), 500);
     }
   };
 
@@ -67,7 +70,7 @@ export default function Login({ onLogin }) {
       </form>
 
       <div style={{ marginTop: 16, textAlign: 'center' }}>
-        <a href="#forgot-password" style={{ color: '#1976d2', textDecoration: 'none', fontSize: 14 }}>
+        <a href="/forgot-password" style={{ color: '#1976d2', textDecoration: 'none', fontSize: 14 }}>
           🔑 Quên mật khẩu?
         </a>
       </div>

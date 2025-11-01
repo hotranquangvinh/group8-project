@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from './axiosConfig';
 
-export default function ResetPassword({ onBack }) {
-  // Parse token from URL: /reset-password/:token
-  const token = window.location.pathname.split('/reset-password/')[1];
+export default function ResetPassword() {
+  const navigate = useNavigate();
+  const { token } = useParams(); // Get token from URL params
   
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -54,7 +55,7 @@ export default function ResetPassword({ onBack }) {
       
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        window.location.href = '/';
+        navigate('/login');
       }, 3000);
       
     } catch (err) {
@@ -208,7 +209,7 @@ export default function ResetPassword({ onBack }) {
           <div style={{ textAlign: 'center' }}>
             <button
               type="button"
-              onClick={onBack || (() => window.location.href = '/')}
+              onClick={() => navigate('/login')}
               style={{
                 background: 'none',
                 border: 'none',
