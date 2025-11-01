@@ -5,11 +5,6 @@ const User = require('../models/User');
 exports.getUsers = async (req, res) => {
   try {
     const users = await User.find().select('-password'); // ẩn mật khẩu
-=======
-// GET /api/users - Lấy danh sách user
-exports.getUsers = async (req, res) => {
-  try {
-    const users = await User.find();
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Server error: ' + error.message });
@@ -18,10 +13,6 @@ exports.getUsers = async (req, res) => {
 
 // 🟢 Lấy thông tin user theo ID (Admin hoặc chính chủ)
 exports.getUserById = async (req, res) => {
-
-// POST /api/users - Tạo user mới
-exports.createUser = async (req, res) => {
->>>>>>> backend-forgot-password
   try {
     const user = await User.findById(req.params.id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -32,6 +23,23 @@ exports.createUser = async (req, res) => {
     }
 
     res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// 🟢 Tạo user mới (Admin có thể tạo thêm user)
+exports.createUser = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: 'Email đã tồn tại' });
+    }
+
+    const newUser = new User({ name, email, password, role });
+    await newUser.save();
+    res.status(201).json(newUser);
   } catch (error) {
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
@@ -59,17 +67,6 @@ exports.updateUser = async (req, res) => {
     }
 
     const updatedUser = await user.save();
-=======
-// PUT /api/users/:id - Cập nhật user
-exports.updateUser = async (req, res) => {
-  try {
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
     res.json(updatedUser);
   } catch (error) {
     res.status(400).json({ message: 'Update failed: ' + error.message });
@@ -88,17 +85,8 @@ exports.deleteUser = async (req, res) => {
     }
 
     await User.findByIdAndDelete(req.params.id);
-
-// DELETE /api/users/:id - Xóa user
-exports.deleteUser = async (req, res) => {
-  try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
-    if (!deletedUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
-};
 };
