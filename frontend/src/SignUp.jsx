@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 
-const API_URL = 'http://localhost:3000/api/auth/signup';
+const API_URL = '/auth/signup'; // Sử dụng relative path
 
 export default function SignUp({ onSuccess }) {
   const [name, setName] = useState('');
@@ -31,7 +31,7 @@ export default function SignUp({ onSuccess }) {
 
     setLoading(true);
     try {
-      const res = await axios.post(API_URL, {
+      const res = await axiosInstance.post(API_URL, {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,

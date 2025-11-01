@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 
-const API_URL = 'http://localhost:3000/api/profile';
+const API_URL = '/profile'; // Sử dụng relative path
 
 export default function Profile({ token }) {
   const [profile, setProfile] = useState(null);
@@ -27,9 +27,7 @@ export default function Profile({ token }) {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axiosInstance.get(API_URL);
       setProfile(res.data);
       setFormData({
         name: res.data.name || '',
@@ -67,15 +65,12 @@ export default function Profile({ token }) {
 
     setLoading(true);
     try {
-      const res = await axios.put(
+      const res = await axiosInstance.put(
         API_URL,
         {
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
           avatar: formData.avatar.trim()
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
