@@ -182,16 +182,70 @@ export default function Profile({ token }) {
             <div style={{ marginBottom: 12 }}>
               <strong style={{ display: 'block', marginBottom: 4, color: '#555' }}>Vai trò:</strong>
               <div style={{ padding: 10, background: '#f5f5f5', borderRadius: 6 }}>
-                <span style={{ 
-                  padding: '4px 10px', 
-                  background: String(profile.role).toLowerCase() === 'admin' ? '#ff9800' : '#4caf50',
-                  color: '#fff',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontWeight: 'bold'
-                }}>
-                  {String(profile.role).toLowerCase() === 'admin' ? '👑 Admin' : '👤 User'}
-                </span>
+                {(() => {
+                  const role = String(profile.role).toLowerCase();
+                  const roleConfig = {
+                    admin: { label: '👑 Admin', color: '#ff9800' },
+                    moderator: { label: '🛡️ Moderator', color: '#2196f3' },
+                    user: { label: '👤 User', color: '#4caf50' }
+                  };
+                  const config = roleConfig[role] || roleConfig.user;
+                  return (
+                    <span style={{ 
+                      padding: '4px 10px', 
+                      background: config.color,
+                      color: '#fff',
+                      borderRadius: 4,
+                      fontSize: 12,
+                      fontWeight: 'bold'
+                    }}>
+                      {config.label}
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Hiển thị quyền hạn theo role */}
+            <div style={{ marginBottom: 12 }}>
+              <strong style={{ display: 'block', marginBottom: 4, color: '#555' }}>Quyền hạn:</strong>
+              <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 6 }}>
+                {(() => {
+                  const role = String(profile.role).toLowerCase();
+                  const permissions = {
+                    admin: [
+                      '✅ Xem, thêm, sửa, xóa tất cả users',
+                      '✅ Truy cập Admin Dashboard',
+                      '✅ Quản lý toàn bộ hệ thống',
+                      '✅ Xem báo cáo và thống kê'
+                    ],
+                    moderator: [
+                      '✅ Xem danh sách users',
+                      '✅ Sửa và xóa users',
+                      '✅ Truy cập Moderator Panel',
+                      '✅ Quản lý nội dung và báo cáo',
+                      '❌ Không truy cập Admin Dashboard'
+                    ],
+                    user: [
+                      '✅ Xem và chỉnh sửa profile cá nhân',
+                      '✅ Sử dụng các tính năng cơ bản',
+                      '❌ Không xem danh sách users',
+                      '❌ Không có quyền quản trị'
+                    ]
+                  };
+                  const perms = permissions[role] || permissions.user;
+                  return (
+                    <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.8 }}>
+                      {perms.map((perm, idx) => (
+                        <li key={idx} style={{ 
+                          color: perm.startsWith('✅') ? '#2e7d32' : '#c62828' 
+                        }}>
+                          {perm}
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                })()}
               </div>
             </div>
 
