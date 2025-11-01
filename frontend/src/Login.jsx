@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 
-const API_URL = 'http://localhost:3000/api/auth/login';
+const API_URL = '/auth/login'; // Sử dụng relative path vì baseURL đã được set trong axiosConfig
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -20,10 +20,17 @@ export default function Login({ onLogin }) {
 
     setLoading(true);
     try {
-      const res = await axios.post(API_URL, { email: email.trim().toLowerCase(), password });
-      const token = res.data?.token;
+      const res = await axiosInstance.post(API_URL, { email: email.trim().toLowerCase(), password });
+      const token = res.data?.accessToken || res.data?.token; // Backend trả về accessToken
+      const refreshToken = res.data?.refreshToken;
+      
       if (token) {
+        // Lưu cả access token và refresh token vào localStorage
         localStorage.setItem('auth_token', token);
+        if (refreshToken) {
+          localStorage.setItem('refresh_token', refreshToken);
+        }
+        
         if (onLogin) onLogin(token);
         setMessage({ type: 'success', text: res.data?.message || 'Đăng nhập thành công' });
       } else {

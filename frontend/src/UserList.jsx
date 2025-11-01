@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 
-const API_URL = 'http://localhost:3000/api/users';
+const API_URL = '/users'; // Sử dụng relative path
 
 // Nhận `token` từ App (đã set axios.defaults) để tránh race condition
 export default function UserList({ token }) {
@@ -58,30 +58,27 @@ export default function UserList({ token }) {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Lấy token từ prop hoặc localStorage để đảm bảo header luôn được gửi
-      const t = token || getToken();
-      if (!t) {
-        // không có token → không gọi API
-        setLoading(false);
-        return alert('Bạn cần đăng nhập để xem danh sách users');
-      }
-      const res = await axios.get(API_URL, { headers: { Authorization: `Bearer ${t}` } });
+      // axiosInstance đã tự động thêm Authorization header
+      const res = await axiosInstance.get(API_URL);
       setUsers(res.data);
     } catch (err) {
-      console.error('Error:', err);
-      const statusCode = err.response && err.response.status;
-      const msg = (err.response && err.response.data && err.response.data.message) || 'Lỗi tải dữ liệu!';
+      console.error('Error fetching users:', err);
+      const statusCode = err.response?.status;
+      const msg = err.response?.data?.message || 'Lỗi tải dữ liệu!';
 
       // Nếu token cũ hoặc user không tồn tại → xoá token và yêu cầu đăng nhập lại
-      if (statusCode === 401 || statusCode === 403 || (statusCode === 404 && msg && msg.toLowerCase().includes('user không tồn tại'))) {
+      if (statusCode === 401 || statusCode === 403) {
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('refresh_token');
         alert('Phiên đăng nhập không hợp lệ hoặc hết hạn. Vui lòng đăng nhập lại.');
-        // reload để App đọc lại token và về trang login
         window.location.reload();
         return;
       }
 
-      alert(msg);
+      // Chỉ hiển thị lỗi nếu không phải do không có quyền admin
+      if (statusCode !== 403) {
+        console.warn('Fetch users failed:', msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -131,9 +128,7 @@ export default function UserList({ token }) {
         name: editForm.name.trim(),
         email: editForm.email.trim().toLowerCase()
       };
-      const t = token || getToken();
-      if (!t) return alert('Bạn cần đăng nhập');
-      const res = await axios.put(`${API_URL}/${id}`, userData, { headers: { Authorization: `Bearer ${t}` } });
+      const res = await axiosInstance.put(`${API_URL}/${id}`, userData);
       setUsers(users.map(u => u._id === id ? res.data : u));
       alert('✅ Cập nhật thành công!');
       handleCancelEdit();
@@ -160,9 +155,7 @@ export default function UserList({ token }) {
 
     setLoading(true);
     try {
-      const t = token || getToken();
-      if (!t) return alert('Bạn cần đăng nhập');
-      await axios.delete(`${API_URL}/${id}`, { headers: { Authorization: `Bearer ${t}` } });
+      await axiosInstance.delete(`${API_URL}/${id}`);
       setUsers(users.filter(u => u._id !== id));
       alert('✅ Xóa thành công!');
     } catch (err) {
@@ -183,8 +176,25 @@ export default function UserList({ token }) {
   return (
     <div style={{ padding: '20px' }}>
       <h2>📋 Danh sách User</h2>
+      
+      {/* Hiển thị thông báo nếu không phải admin */}
+      {token && currentUser && currentUser.role !== 'admin' && users.length === 0 && !loading && (
+        <div style={{ 
+          padding: 15, 
+          background: '#fff3cd', 
+          borderRadius: 6, 
+          border: '1px solid #ffc107',
+          color: '#856404',
+          marginBottom: 15
+        }}>
+          ⚠️ <strong>Chỉ Admin mới có quyền xem danh sách User</strong>
+          <br />
+          <small>Bạn đang đăng nhập với vai trò: <strong>User</strong></small>
+        </div>
+      )}
+      
       {loading && <p>⏳ Đang tải...</p>}
-      {users.length === 0 && !loading && <p>📭 Chưa có user</p>}
+      {users.length === 0 && !loading && currentUser?.role === 'admin' && <p>📭 Chưa có user</p>}
 
       {users.length > 0 && (
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
