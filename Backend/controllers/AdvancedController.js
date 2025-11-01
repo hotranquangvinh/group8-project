@@ -2,8 +2,9 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
-const cloudinary = require('../config/cloudinary'); // file config Cloudinary
+const { cloudinary, uploadImage } = require('../config/cloudinary'); // destructure đúng
 const multer = require('multer');
+const fs = require('fs'); // để xóa file sau khi upload
 
 // === Forgot Password ===
 const forgotPassword = async (req, res) => {
@@ -69,23 +70,59 @@ await user.save();
 };
 
 // === Upload Avatar ===
-const upload = multer({ dest: 'uploads/' }); // tạm lưu file trước khi upload
-
 const uploadAvatar = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'Chưa chọn file ảnh' });
+    console.log('📷 Upload avatar request received');
+    console.log('User:', req.user?.id);
+    console.log('File:', req.file);
 
+    if (!req.file) {
+      return res.status(400).json({ message: 'Chưa chọn file ảnh' });
+    }
+
+    // Upload lên Cloudinary
+    console.log('⬆️ Uploading to Cloudinary...');
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'avatars',
+      resource_type: 'image',
     });
+    
+    console.log('✅ Cloudinary upload success:', result.secure_url);
 
-    const user = await User.findById(req.user.id); // req.user từ authMiddleware
+    // Xóa file tạm
+    fs.unlinkSync(req.file.path);
+    console.log('🗑️ Temp file deleted');
+
+    // Cập nhật avatar vào database
+const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy user' });
+    }
+
     user.avatar = result.secure_url;
     await user.save();
 
-    res.json({ message: 'Upload avatar thành công!', avatar: user.avatar });
+    console.log('💾 Avatar saved to database');
+    
+    res.json({ 
+      message: 'Upload avatar thành công!', 
+      avatar: user.avatar 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('❌ Upload avatar error:', err);
+    
+    // Xóa file tạm nếu có lỗi
+    if (req.file?.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {
+        console.error('Error deleting temp file:', e);
+      }
+    }
+    
+    res.status(500).json({ 
+      message: 'Lỗi upload avatar: ' + err.message 
+    });
   }
 };
 
